@@ -52,7 +52,7 @@ uint16_t songLength = 0;                      //Length of song
 volatile uint16_t songProgress = 0;           //Progress through a song
 
 void setup() {
-  Wire.begin();
+  Wire.begin();                               //Initialize I2C bus in master mode
   tft.initR(INITR_BLACKTAB);                  //Initialize TFT panel
   tft.fillScreen(ST77XX_BLACK);               //Fill screen with black
   tft.setTextColor(ST77XX_WHITE);             //Set colour to white
