@@ -129,91 +129,91 @@ void loop() {
     tft.fillRect(14 + mapBuf, 100, 100 - mapBuf, 15, ST77XX_WHITE); //Draw progBar background
     tft.fillRect(14, 100, mapBuf, 15, ST77XX_GREEN);                //Draw progress bar
   }
-  if (reload) {                             //If load more button was pressed
-    reload = false;                         //Reset flag
-    count = 0;                              //Set selector position to 0
-    Wire.beginTransmission(PLAYER);         //Start a transmission to the player MCU
-    Wire.write(3);                          //Write a code of 3 (# of songs)
-    Wire.endTransmission();                 //End transmission/send bytes
-    Wire.requestFrom(PLAYER, 2);            //Request 2 bytes from the player
-    while (!Wire.available());              //Wait for bytes to become available
-    numSongs = Wire.read() << 8;            //Receive high byte
-    numSongs |= Wire.read();                //Receive low byte
-    if (numSongs < 25) getSongs(numSongs);  //If number of songs is less than 25, receive all names
-    else {                                  //If number of songs is 25 or more...
-      getSongs(24);                         //Get 24 songs
-      numSongs = 25;                        //Add a 25th row
-      strcpy(songNames[24], "Load More...");//Put a "Load More..." button on row 25
+  if (reload) {                               //If load more button was pressed
+    reload = false;                           //Reset flag
+    count = 0;                                //Set selector position to 0
+    Wire.beginTransmission(PLAYER);           //Start a transmission to the player MCU
+    Wire.write(3);                            //Write a code of 3 (# of songs)
+    Wire.endTransmission();                   //End transmission/send bytes
+    Wire.requestFrom(PLAYER, 2);              //Request 2 bytes from the player
+    while (!Wire.available());                //Wait for bytes to become available
+    numSongs = Wire.read() << 8;              //Receive high byte
+    numSongs |= Wire.read();                  //Receive low byte
+    if (numSongs < 25) getSongs(numSongs);    //If number of songs is less than 25, receive all names
+    else {                                    //If number of songs is 25 or more...
+      getSongs(24);                           //Get 24 songs
+      numSongs = 25;                          //Add a 25th row
+      strcpy(songNames[24], "Load More...");  //Put a "Load More..." button on row 25
     }
-    updateScreen();                         //Update the screen with new songs
+    updateScreen();                           //Update the screen with new songs
   }
 }
-void getSongs(uint8_t maxSong) {            //Function to get "maxSong" number of song names
+void getSongs(uint8_t maxSong) {              //Function to get "maxSong" number of song names
   memset(songNames, '\0', sizeof(songNames));   //Clear array
-  Wire.beginTransmission(PLAYER);           //Start a transmission to the player MCU
-  Wire.write(2);                            //2 means send songs
-  Wire.endTransmission();                   //End transmission/send bytes
-  uint8_t row;                              //Row index
-  for (row = 0; row < maxSong; row++) {     //Loop maxSong number of times
-    Wire.requestFrom(PLAYER, 32);           //Request 32 bytes (characters)
+  Wire.beginTransmission(PLAYER);             //Start a transmission to the player MCU
+  Wire.write(2);                              //2 means send songs
+  Wire.endTransmission();                     //End transmission/send bytes
+  uint8_t row;                                //Row index
+  for (row = 0; row < maxSong; row++) {       //Loop maxSong number of times
+    Wire.requestFrom(PLAYER, 32);             //Request 32 bytes (characters)
     for (uint8_t charac = 0; Wire.available(); charac++)  //Receive however many bytes available
-      songNames[row][charac] = Wire.read(); //Receive 1 byte (character) at a time
-    songNames[row][19] = '\0';              //Put null terminator into location 19 (display length)
-    if (songNames[row][0] == 3) break;      //If received "end of text character", stop the loop
+      songNames[row][charac] = Wire.read();   //Receive 1 byte (character) at a time
+    songNames[row][19] = '\0';                //Put null terminator into location 19 (display length)
+    if (songNames[row][0] == 3) break;        //If received "end of text character", stop the loop
   }
-  if (songNames[row][0] != 3)               //For all valid song names...
-    songLocation += maxSong;                //Update song index
-  else songLocation = 0;                    //If invalid, reset the song index to loop back
+  if (songNames[row][0] != 3)                 //For all valid song names...
+    songLocation += maxSong;                  //Update song index
+  else songLocation = 0;                      //If invalid, reset the song index to loop back
 }
-void ISR_rotary() {                         //Rotary encoder update "change" ISR
-  triggered = true;                         //Activate 'changed' flag
-  pinA = digitalRead(PIN_A);                //Store state of pin 'A'
-  pinB = digitalRead(PIN_B);                //Store state of pin 'B'
+void ISR_rotary() {                           //Rotary encoder update "change" ISR
+  triggered = true;                           //Activate 'changed' flag
+  pinA = digitalRead(PIN_A);                  //Store state of pin 'A'
+  pinB = digitalRead(PIN_B);                  //Store state of pin 'B'
 
 }
-ISR(TIMER1_COMPA_vect) {                    //Progress bar update ISR
-  progBar = true;                           //Set progress bar update flag
-  if (songProgress < songLength)            //If song is playing...
-    songProgress++;                         //Add a second to the progress
+ISR(TIMER1_COMPA_vect) {                      //Progress bar update ISR
+  progBar = true;                             //Set progress bar update flag
+  if (songProgress < songLength)              //If song is playing...
+    songProgress++;                           //Add a second to the progress
 }
-ISR(PCINT2_vect) {                          //Pin change interrupt for PORTD
-  if (PIND & (1 << PD0)) {                  //If the encoder switch was high...
-    sw = true;                              //Set switch pressed flag
-    pre0 = true;                            //Set status flag to detect falling edge
+ISR(PCINT2_vect) {                            //Pin change interrupt for PORTD
+  if (PIND & (1 << PD0)) {                    //If the encoder switch was high...
+    sw = true;                                //Set switch pressed flag
+    pre0 = true;                              //Set status flag to detect falling edge
   }
-  else if (pre0) pre0 = false;              //Reset status flag on falling edge
-  else {                                    //If change was detected on encoder...
-    triggered = true;                       //Set encoder changed flag
-    pinA = digitalRead(PIN_A);              //Store state of pin A
-    pinB = digitalRead(PIN_B);              //Store state of pin B
-  }
-}
-void updateScreen() {                       //Function to update the screen
-  tft.fillScreen(ST77XX_BLACK);             //Clear LCD when the displayed string changes
-  for (uint8_t i = 0; i < numSongs; i++) {  //Display all valid songs
-    tft.setCursor(10, 10 * (i + 1));        //Set cursor to next line
-    if ((count + i) < numSongs)             //If the song is valid...
-      tft.print(songNames[count + i]);      //Print the song
+  else if (pre0) pre0 = false;                //Reset status flag on falling edge
+  else {                                      //If change was detected on encoder...
+    triggered = true;                         //Set encoder changed flag
+    pinA = digitalRead(PIN_A);                //Store state of pin A
+    pinB = digitalRead(PIN_B);                //Store state of pin B
   }
 }
-void rotaryUpdate() {                       //Function to detect rotary encoder direction
-  if (triggered) {                          //When change flag has tripped...
-    triggered = false;                      //Reset change flag
+void updateScreen() {                         //Function to update the screen
+  tft.fillScreen(ST77XX_BLACK);               //Clear LCD when the displayed string changes
+  for (uint8_t i = 0; i < numSongs; i++) {    //Display all valid songs
+    tft.setCursor(10, 10 * (i + 1));          //Set cursor to next line
+    if ((count + i) < numSongs)               //If the song is valid...
+      tft.print(songNames[count + i]);        //Print the song
+  }
+}
+void rotaryUpdate() {                         //Function to detect rotary encoder direction
+  if (triggered) {                            //When change flag has tripped...
+    triggered = false;                        //Reset change flag
     displaying = false;
-    if (pinA != preA)                       //Determine direction (intermediary step)
-      preA = pinA;                          //Store previous state
+    if (pinA != preA)                         //Determine direction (intermediary step)
+      preA = pinA;                            //Store previous state
     else {  
-      if ((pinA == pinB)) {                 //Determine direction
-        if (!subtracted) count++;           //Increment time (direction A)
-        else subtracted = false;            //Clear subtracted flag if added
+      if ((pinA == pinB)) {                   //Determine direction
+        if (!subtracted) count++;             //Increment time (direction A)
+        else subtracted = false;              //Clear subtracted flag if added
       }
-      else {                                //Other direction
-        count--;                            //Decrement time (direction B)
-        subtracted = true;                  //Set subtracted flag
+      else {                                  //Other direction
+        count--;                              //Decrement time (direction B)
+        subtracted = true;                    //Set subtracted flag
       }
-      if (count < 0) count = 0;             //Bottom bookend
+      if (count < 0) count = 0;               //Bottom bookend
       if (count >= numSongs) count = numSongs - 1;  //Top bookend
-      updateScreen();                       //Update the screen
+      updateScreen();                         //Update the screen
     }
   }
 }
