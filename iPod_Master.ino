@@ -199,7 +199,7 @@ void updateScreen() {                         //Function to update the screen
 void rotaryUpdate() {                         //Function to detect rotary encoder direction
   if (triggered) {                            //When change flag has tripped...
     triggered = false;                        //Reset change flag
-    displaying = false;
+    displaying = false;                       //Exit now playing screen
     if (pinA != preA)                         //Determine direction (intermediary step)
       preA = pinA;                            //Store previous state
     else {  
