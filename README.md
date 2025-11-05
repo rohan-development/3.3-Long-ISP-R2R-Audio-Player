@@ -4,4 +4,4 @@ The attached code files allow 2 ATmega328Ps to be used in tandem to control a TF
 
 See attached Report.pdf for further details.
 
-Video overview: [https://www.youtube.com/watch?v=TbR3IQ8DSpg](url)
+Video overview: https://www.youtube.com/watch?v=TbR3IQ8DSpg
